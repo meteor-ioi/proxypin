@@ -36,6 +36,7 @@ import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/content/panel.dart';
 import 'package:proxypin/ui/desktop/request/request.dart';
+import 'package:proxypin/ui/mobile/mobile.dart';
 import 'package:proxypin/ui/mobile/request/repeat.dart';
 import 'package:proxypin/ui/mobile/request/request_editor.dart';
 import 'package:proxypin/ui/mobile/setting/request_rewrite.dart';
@@ -175,6 +176,7 @@ class RequestRowState extends State<RequestRow> {
                   proxyServer: widget.proxyServer,
                   httpRequest: request,
                   httpResponse: response,
+                  requestList: MobileApp.container,
                   title: Text(localizations.captureDetail, style: const TextStyle(fontSize: 16)));
             }));
           },

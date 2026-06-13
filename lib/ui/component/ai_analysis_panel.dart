@@ -9,6 +9,7 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/component/ai_setting_dialog.dart';
 import 'package:proxypin/ui/component/utils.dart';
+import 'package:proxypin/utils/listenable_list.dart';
 
 class MessageItem {
   final String role; // 'user' 或 'assistant'
@@ -22,9 +23,10 @@ final Map<String, List<MessageItem>> _aiAnalysisCache = {};
 
 class AiAnalysisPanel extends StatefulWidget {
   final HttpRequest request;
+  final ListenableList<HttpRequest>? requestList;
   final bool hideAppBar;
 
-  const AiAnalysisPanel({super.key, required this.request, this.hideAppBar = false});
+  const AiAnalysisPanel({super.key, required this.request, this.requestList, this.hideAppBar = false});
 
   @override
   State<AiAnalysisPanel> createState() => _AiAnalysisPanelState();
@@ -44,12 +46,42 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
     return _aiAnalysisCache[rid]!;
   }
 
+  final Set<String> _selectedContextIds = {};
+
   @override
   void initState() {
     super.initState();
+    final contexts = _getContextRequests();
+    for (final req in contexts) {
+      _selectedContextIds.add(req.requestId);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
+  }
+
+  List<HttpRequest> _getContextRequests() {
+    if (widget.requestList == null) return [];
+    final list = widget.requestList!;
+    final index = list.indexOf(widget.request);
+    if (index == -1) return [];
+
+    final result = <HttpRequest>[];
+    // 获取前 3 个
+    for (int i = 3; i >= 1; i--) {
+      final idx = index - i;
+      if (idx >= 0 && idx < list.length) {
+        result.add(list.elementAt(idx));
+      }
+    }
+    // 获取后 2 个
+    for (int i = 1; i <= 2; i++) {
+      final idx = index + i;
+      if (idx >= 0 && idx < list.length) {
+        result.add(list.elementAt(idx));
+      }
+    }
+    return result;
   }
 
   @override
@@ -85,8 +117,11 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
     final method = req.method.name;
     final reqLen = req.body?.length ?? 0;
     final respLen = req.response?.body?.length ?? 0;
-    
+
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    final contexts = _getContextRequests();
     
     return Center(
       child: SingleChildScrollView(
@@ -120,16 +155,16 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
               width: double.infinity,
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: isDark ? Colors.grey.shade900 : Colors.grey.shade50,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                border: Border.all(color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildIntroItem("请求方法", method, Colors.green),
                   const SizedBox(height: 8),
-                  _buildIntroItem("请求地址", url, Colors.black87),
+                  _buildIntroItem("请求地址", url, theme.textTheme.bodyLarge?.color ?? Colors.black87),
                   const SizedBox(height: 8),
                   _buildIntroItem("请求 Body 大小", getPackage(reqLen), Colors.blueGrey),
                   const SizedBox(height: 8),
@@ -137,6 +172,100 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
                 ],
               ),
             ),
+            
+            // 关联上下文流量推荐 (滑动窗口)
+            if (contexts.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Icon(Icons.link, size: 18, color: theme.colorScheme.primary),
+                  const SizedBox(width: 5),
+                  Text(
+                    "关联上下文流量推荐 (自动滑动窗口)",
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: theme.colorScheme.onSurface),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                maxHeight: 180,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade900 : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isDark ? Colors.grey.shade850 : Colors.grey.shade200),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
+                  itemCount: contexts.length,
+                  separatorBuilder: (context, index) => Divider(height: 1, color: isDark ? Colors.grey.shade800 : Colors.grey.shade200),
+                  itemBuilder: (context, idx) {
+                    final ctxReq = contexts[idx];
+                    final isSelected = _selectedContextIds.contains(ctxReq.requestId);
+                    final isPrev = widget.requestList!.indexOf(ctxReq) < widget.requestList!.indexOf(widget.request);
+                    
+                    return CheckboxListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      value: isSelected,
+                      title: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: isPrev ? Colors.blue.withValues(alpha: 0.1) : Colors.purple.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              isPrev ? "前序" : "后续",
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isPrev ? Colors.blue : Colors.purple,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            ctxReq.method.name,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              ctxReq.requestUrl,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 11, color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7)),
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            "[${ctxReq.response?.status.code ?? '...'}]",
+                            style: TextStyle(
+                              fontSize: 10, 
+                              color: (ctxReq.response?.status.code ?? 0) >= 400 ? Colors.red : Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                      onChanged: (val) {
+                        setState(() {
+                          if (val == true) {
+                            _selectedContextIds.add(ctxReq.requestId);
+                          } else {
+                            _selectedContextIds.remove(ctxReq.requestId);
+                          }
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    );
+                  },
+                ),
+              ),
+            ],
+            
             const SizedBox(height: 25),
             SizedBox(
               width: double.infinity,
@@ -201,20 +330,51 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
       respBody = "${respBody.substring(0, 2500)}...\n[Body 已被部分截短]";
     }
 
-    // 构建上下文
-    final systemPrompt = "你是一位资深的网络协议分析师和网络安全审计专家。我会向你提供一条被捕获的 HTTP/HTTPS 请求报文及响应报文。请你深度分析它，给出：\n"
-        "1. 接口功能与用途推导\n"
-        "2. 所有请求和响应参数的精准业务含义解读\n"
-        "3. 是否存在越权漏洞、数据敏感泄露等安全隐患，以及接口中的参数签名校验机制\n"
-        "4. 附上能够完美重现复现此接口调用的 Python requests 示例代码。\n"
-        "请保持回答的技术客观性、条理性，回答使用简体中文，并以 Markdown 结构返回。";
+    // 格式化勾选的上下文请求
+    final contexts = _getContextRequests();
+    final selectedContexts = contexts.where((r) => _selectedContextIds.contains(r.requestId)).toList();
 
-    final userPrompt = "请求信息：\n"
+    String contextText = "";
+    if (selectedContexts.isNotEmpty) {
+      contextText += "===== 关联的上下文流量序列 (共 ${selectedContexts.length} 条，作为分析参考线索) =====\n\n";
+      for (int i = 0; i < selectedContexts.length; i++) {
+        final ctxReq = selectedContexts[i];
+        String ctxReqBody = ctxReq.bodyAsString;
+        if (ctxReqBody.length > 800) {
+          ctxReqBody = "${ctxReqBody.substring(0, 800)}...\n[Body 已被部分截短]";
+        }
+        String? ctxRespBody = ctxReq.response?.bodyAsString;
+        if (ctxRespBody != null && ctxRespBody.length > 800) {
+          ctxRespBody = "${ctxRespBody.substring(0, 800)}...\n[Body 已被部分截短]";
+        }
+
+        contextText += "--- [关联请求 #${i + 1}] ---\n"
+            "- Method: ${ctxReq.method.name}\n"
+            "- URL: ${ctxReq.requestUrl}\n"
+            "- Status Code: ${ctxReq.response?.status.code ?? '未知'}\n"
+            "- Request Headers: ${ctxReq.headers.toMap()}\n"
+            "- Request Body: ${ctxReqBody.isNotEmpty ? ctxReqBody : '无/空'}\n"
+            "- Response Body: ${ctxRespBody ?? '无/空'}\n\n";
+      }
+      contextText += "================================================\n\n";
+    }
+
+    // 构建上下文
+    final systemPrompt = "你是一位资深的网络协议分析师和网络安全审计专家。我会向你提供一条被捕获的主请求报文及响应报文，"
+        "同时可能会提供与该请求前后相邻的关联上下文请求（作为分析参考线索）。请你深度分析主请求，结合上下文线索给出：\n"
+        "1. 接口功能与用途推导\n"
+        "2. 所有请求和响应参数的精准业务含义解读，若有上下文关联请求，请梳理出接口间的数据参数传递关系与前因后果\n"
+        "3. 是否存在越权漏洞、数据敏感泄露等安全隐患，以及接口中的参数签名校验机制\n"
+        "4. 附上能够完美重现复现主接口调用的 Python requests 示例代码。\n"
+        "请保持回答的技术客观性、条理性和严谨度，回答使用简体中文，并以 Markdown 结构返回。";
+
+    final userPrompt = "${contextText}"
+        "===== 主请求信息 =====\n"
         "- Method: ${req.method.name}\n"
         "- URL: ${req.requestUrl}\n"
         "- Request Headers: ${req.headers.toMap()}\n"
         "- Request Body: $reqBody\n\n"
-        "响应信息：\n"
+        "主响应信息：\n"
         "- Status Code: ${req.response?.status.code ?? '未知'}\n"
         "- Response Headers: ${req.response?.headers.toMap() ?? '无'}\n"
         "- Response Body: ${respBody ?? '无'}";

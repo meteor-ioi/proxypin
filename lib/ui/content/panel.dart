@@ -26,6 +26,7 @@ import 'package:proxypin/ui/content/web_socket.dart';
 import 'package:proxypin/ui/component/ai_analysis_panel.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
+import 'package:proxypin/utils/listenable_list.dart';
 
 import 'body.dart';
 import 'headers.dart';
@@ -42,12 +43,15 @@ class NetworkTabController extends StatefulWidget {
   final Widget? title;
   final TextStyle? tabStyle;
 
+  final ListenableList<HttpRequest>? requestList;
+
   NetworkTabController(
       {HttpRequest? httpRequest,
       HttpResponse? httpResponse,
       this.title,
       this.tabStyle,
       this.proxyServer,
+      this.requestList,
       this.windowId})
       : super(key: GlobalKey<NetworkTabState>()) {
     currentKey = key as GlobalKey<NetworkTabState>;
@@ -190,6 +194,7 @@ class NetworkTabState extends State<NetworkTabController> with SingleTickerProvi
                     : AiAnalysisPanel(
                         key: ValueKey(widget.request.get()?.requestId),
                         request: widget.request.get()!,
+                        requestList: widget.requestList,
                         hideAppBar: true,
                       ),
               ),

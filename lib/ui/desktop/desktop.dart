@@ -99,7 +99,7 @@ class _DesktopHomePagePageState extends State<DesktopHomePage> implements EventL
   void initState() {
     super.initState();
     proxyServer.addListener(this);
-    panel = NetworkTabController(tabStyle: const TextStyle(fontSize: 16), proxyServer: proxyServer);
+    panel = NetworkTabController(tabStyle: const TextStyle(fontSize: 16), proxyServer: proxyServer, requestList: container);
     _remoteHistorySubscription = HistoryStorage.onRemoteImported.listen((_) {
       if (mounted) {
         _selectIndex.value = 2;
