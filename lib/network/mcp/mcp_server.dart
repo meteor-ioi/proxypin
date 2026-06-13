@@ -118,8 +118,10 @@ class McpServer {
           final response = await _handleJsonRpc(jsonRequest);
           
           request.response.statusCode = io.HttpStatus.ok;
-          request.response.headers.contentType = io.ContentType.json;
-          request.response.write(jsonEncode(response));
+          if (response != null) {
+            request.response.headers.contentType = io.ContentType.json;
+            request.response.write(jsonEncode(response));
+          }
         } catch (e) {
           request.response.statusCode = io.HttpStatus.badRequest;
           request.response.headers.contentType = io.ContentType.json;
@@ -151,7 +153,7 @@ class McpServer {
   }
 
   /// 处理 JSON-RPC 请求并分配路由
-  Future<Map<String, dynamic>> _handleJsonRpc(dynamic rpc) async {
+  Future<Map<String, dynamic>?> _handleJsonRpc(dynamic rpc) async {
     final id = rpc is Map ? rpc["id"] : null;
     final method = rpc is Map ? rpc["method"] : null;
     final params = rpc is Map ? rpc["params"] ?? {} : {};
@@ -178,11 +180,7 @@ class McpServer {
             "id": id
           };
         case "notifications/initialized":
-          return {
-            "jsonrpc": "2.0",
-            "result": null,
-            "id": id
-          };
+          return null;
         case "tools/list":
           return {
             "jsonrpc": "2.0",
