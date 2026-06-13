@@ -12,6 +12,8 @@ jobs:
   build-macos:
     name: Build macOS App
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,3 +44,16 @@ jobs:
         with:
           name: proxypin-macos
           path: build/macos/Build/Products/Release/proxypin.app
+
+      - name: Package macOS App
+        run: |
+          cd build/macos/Build/Products/Release
+          zip -r proxypin-macos.zip proxypin.app
+
+      - name: Upload to Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly-build-${{ github.run_number }}
+          name: "Nightly Build #${{ github.run_number }}"
+          files: build/macos/Build/Products/Release/proxypin-macos.zip
