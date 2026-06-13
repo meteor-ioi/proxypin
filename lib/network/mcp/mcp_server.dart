@@ -162,6 +162,27 @@ class McpServer {
 
     try {
       switch (method) {
+        case "initialize":
+          return {
+            "jsonrpc": "2.0",
+            "result": {
+              "protocolVersion": params["protocolVersion"] ?? "2024-11-05",
+              "capabilities": {
+                "tools": {}
+              },
+              "serverInfo": {
+                "name": "proxypin",
+                "version": "1.0.0"
+              }
+            },
+            "id": id
+          };
+        case "notifications/initialized":
+          return {
+            "jsonrpc": "2.0",
+            "result": null,
+            "id": id
+          };
         case "tools/list":
           return {
             "jsonrpc": "2.0",
