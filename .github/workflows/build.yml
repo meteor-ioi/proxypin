@@ -29,9 +29,10 @@ jobs:
       - name: Disable macOS Code Signing
         run: |
           sed -i '' 's/DEVELOPMENT_TEAM = DM3F8VR243;/DEVELOPMENT_TEAM = "";/g' macos/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development";/CODE_SIGN_IDENTITY = "-";/g' macos/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_IDENTITY = "Mac Development";/CODE_SIGN_IDENTITY = "-";/g' macos/Runner.xcodeproj/project.pbxproj
           sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' macos/Runner.xcodeproj/project.pbxproj
+          echo "CODE_SIGN_IDENTITY = " >> macos/Runner/Configs/AppInfo.xcconfig
+          echo "CODE_SIGNING_REQUIRED = NO" >> macos/Runner/Configs/AppInfo.xcconfig
+          echo "CODE_SIGNING_ALLOWED = NO" >> macos/Runner/Configs/AppInfo.xcconfig
 
       - name: Build macOS App
         run: flutter build macos --release
