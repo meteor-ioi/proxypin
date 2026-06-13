@@ -417,7 +417,7 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
         }).toList(),
         "stream": true,
       };
-      request.write(jsonEncode(body));
+      request.add(utf8.encode(jsonEncode(body)));
 
       final response = await request.close();
       if (response.statusCode != 200) {
