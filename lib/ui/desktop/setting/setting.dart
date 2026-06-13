@@ -81,7 +81,7 @@ class _SettingState extends State<Setting> {
             onPressed: () => MultiWindow.openWindow(localizations.script, 'ScriptWidget', size: const Size(800, 780))),
         item(localizations.breakpoint, onPressed: requestBreakpoint),
         item(localizations.externalProxy, onPressed: setExternalProxy),
-        item("AI 与 MCP 设置", onPressed: showAiSetting),
+        item("MCP 服务设置", onPressed: showAiSetting),
         item(localizations.about, onPressed: showAbout),
       ],
     );

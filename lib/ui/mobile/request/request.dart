@@ -28,7 +28,6 @@ import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/util/cache.dart';
-import 'package:proxypin/ui/component/ai_analysis_panel.dart';
 import 'package:proxypin/storage/favorites.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
 import 'package:proxypin/ui/component/utils.dart';
@@ -347,19 +346,7 @@ class RequestRowState extends State<RequestRow> {
                           label: localizations.editRequest,
                           icon: Icons.replay_outlined),
                     ),
-                    //AI流量分析
-                    menuItem(
-                      left: itemButton(
-                          onPressed: () {
-                            Navigator.maybePop(availableContext);
-                            showDialog(
-                                context: getContext(),
-                                builder: (context) => AiAnalysisPanel(request: request));
-                          },
-                          label: "AI 流量分析",
-                          icon: Icons.android_outlined),
-                      right: const SizedBox(),
-                    ),
+
                     //script and rewrite
                     menuItem(
                       left: itemButton(

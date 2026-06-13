@@ -163,7 +163,7 @@ class _PreferenceState extends State<Preference> {
             const SizedBox(height: 12),
             section([
               ListTile(
-                title: const Text("AI 与 MCP 设置"),
+                title: const Text("MCP 服务设置"),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
                   showDialog(

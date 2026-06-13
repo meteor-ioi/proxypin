@@ -23,7 +23,6 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/state_component.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/content/web_socket.dart';
-import 'package:proxypin/ui/component/ai_analysis_panel.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:proxypin/utils/listenable_list.dart';
@@ -85,7 +84,6 @@ class NetworkTabState extends State<NetworkTabController> with SingleTickerProvi
     'Request',
     'Response',
     'Cookies',
-    'AI 诊断',
   ];
 
   final TextStyle textStyle = const TextStyle(fontSize: 14);
@@ -188,16 +186,6 @@ class NetworkTabState extends State<NetworkTabController> with SingleTickerProvi
                   child: isStreamMessages
                       ? Websocket(widget.request, widget.response)
                       : Cookies(widget.request, widget.response)),
-              KeepAliveWrapper(
-                child: widget.request.get() == null
-                    ? const SizedBox()
-                    : AiAnalysisPanel(
-                        key: ValueKey(widget.request.get()?.requestId),
-                        request: widget.request.get()!,
-                        requestList: widget.requestList,
-                        hideAppBar: true,
-                      ),
-              ),
             ],
           )),
     );
