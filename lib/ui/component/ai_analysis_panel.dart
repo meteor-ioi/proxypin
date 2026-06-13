@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/component/ai_setting_dialog.dart';
+import 'package:proxypin/ui/component/utils.dart';
 
 class MessageItem {
   final String role; // 'user' 或 'assistant'
@@ -16,26 +17,39 @@ class MessageItem {
   MessageItem(this.role, this.content);
 }
 
+// 全局缓存 AI 诊断的会话历史。Key 为 request.requestId
+final Map<String, List<MessageItem>> _aiAnalysisCache = {};
+
 class AiAnalysisPanel extends StatefulWidget {
   final HttpRequest request;
+  final bool hideAppBar;
 
-  const AiAnalysisPanel({super.key, required this.request});
+  const AiAnalysisPanel({super.key, required this.request, this.hideAppBar = false});
 
   @override
   State<AiAnalysisPanel> createState() => _AiAnalysisPanelState();
 }
 
 class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
-  final List<MessageItem> _messages = [];
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isLoading = false;
   String? _error;
 
+  List<MessageItem> get _messages {
+    final rid = widget.request.requestId;
+    if (!_aiAnalysisCache.containsKey(rid)) {
+      return [];
+    }
+    return _aiAnalysisCache[rid]!;
+  }
+
   @override
   void initState() {
     super.initState();
-    _initAnalysis();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
   }
 
   @override
@@ -57,10 +71,119 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
     });
   }
 
+  void _startAnalysis() {
+    final rid = widget.request.requestId;
+    if (_aiAnalysisCache.containsKey(rid)) return;
+    
+    _aiAnalysisCache[rid] = [];
+    _initAnalysis();
+  }
+
+  Widget _buildIntroPanel() {
+    final req = widget.request;
+    final url = req.requestUrl;
+    final method = req.method.name;
+    final reqLen = req.body?.length ?? 0;
+    final respLen = req.response?.body?.length ?? 0;
+    
+    final theme = Theme.of(context);
+    
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(25),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.psychology, 
+                size: 56, 
+                color: theme.colorScheme.primary
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Proxypin AI 流量逆向诊断",
+              style: TextStyle(
+                fontSize: 18, 
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildIntroItem("请求方法", method, Colors.green),
+                  const SizedBox(height: 8),
+                  _buildIntroItem("请求地址", url, Colors.black87),
+                  const SizedBox(height: 8),
+                  _buildIntroItem("请求 Body 大小", getPackage(reqLen), Colors.blueGrey),
+                  const SizedBox(height: 8),
+                  _buildIntroItem("响应 Body 大小", getPackage(respLen), Colors.blueGrey),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.rocket_launch),
+                label: const Text(
+                  "开启 AI 流量智能诊断",
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+                onPressed: _startAnalysis,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Text(
+              "* 诊断需要发送请求元数据与解码的 Payload，请确认已配置大模型 API Key。",
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntroItem(String label, String value, Color valueColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey),
+        ),
+        const SizedBox(height: 2),
+        SelectableText(
+          value,
+          style: TextStyle(fontSize: 13, color: valueColor, fontFamily: 'monospace'),
+        ),
+      ],
+    );
+  }
+
   // 初始化分析 Prompt 并发起第一轮分析
   Future<void> _initAnalysis() async {
     final config = AppConfiguration.current;
     if (config == null || config.llmApiKey.isEmpty) {
+      _aiAnalysisCache.remove(widget.request.requestId);
       setState(() {
         _error = "尚未配置 LLM 大模型。请先点击右上角齿轮图标配置 API Key 与服务地址。";
       });
@@ -96,9 +219,11 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
         "- Response Headers: ${req.response?.headers.toMap() ?? '无'}\n"
         "- Response Body: ${respBody ?? '无'}";
 
-    _messages.add(MessageItem("system", systemPrompt));
-    _messages.add(MessageItem("user", userPrompt));
-    _messages.add(MessageItem("assistant", "正在为您连接大模型并开启流量逆向分析，请稍后..."));
+    setState(() {
+      _messages.add(MessageItem("system", systemPrompt));
+      _messages.add(MessageItem("user", userPrompt));
+      _messages.add(MessageItem("assistant", "正在为您连接大模型并开启流量逆向分析，请稍后..."));
+    });
     
     _scrollToBottom();
     _callLLM();
@@ -195,24 +320,23 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
       context: context,
       builder: (context) => const AiSettingDialog(),
     ).then((_) {
-      // 重新读取配置，如果刚才配置好了就重新加载分析
       if (_error != null && AppConfiguration.current?.llmApiKey.isNotEmpty == true) {
         setState(() {
           _error = null;
-          _messages.clear();
         });
-        _initAnalysis();
+        _startAnalysis();
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasStarted = _messages.isNotEmpty;
     // 隐藏 System Prompt 不向用户渲染，渲染时从 index=1 开始
     final visibleMessages = _messages.where((m) => m.role != "system").toList();
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: widget.hideAppBar ? null : AppBar(
         title: const Text("AI 流量逆向助手"),
         actions: [
           IconButton(
@@ -244,90 +368,93 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
               ),
             ),
           Expanded(
-            child: visibleMessages.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(15),
-                    itemCount: visibleMessages.length,
-                    itemBuilder: (context, index) {
-                      final item = visibleMessages[index];
-                      final isUser = item.role == "user";
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: isUser ? Colors.blue.shade100 : Colors.teal.shade100,
-                              radius: 16,
-                              child: Icon(
-                                isUser ? Icons.person : Icons.android,
-                                size: 18,
-                                color: isUser ? Colors.blue.shade900 : Colors.teal.shade900,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    isUser ? "You" : "AI Assistant",
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey),
+            child: !hasStarted
+                ? _buildIntroPanel()
+                : visibleMessages.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(15),
+                        itemCount: visibleMessages.length,
+                        itemBuilder: (context, index) {
+                          final item = visibleMessages[index];
+                          final isUser = item.role == "user";
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: isUser ? Colors.blue.shade100 : Colors.teal.shade100,
+                                  radius: 16,
+                                  child: Icon(
+                                    isUser ? Icons.person : Icons.android,
+                                    size: 18,
+                                    color: isUser ? Colors.blue.shade900 : Colors.teal.shade900,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: isUser ? Colors.blue.shade50 : Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: SelectableText(
-                                      item.content,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontFamily: !isUser ? 'monospace' : null,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isUser ? "You" : "AI Assistant",
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey),
                                       ),
-                                    ),
+                                      const SizedBox(height: 4),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: isUser ? Colors.blue.shade50 : Colors.grey.shade100,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: SelectableText(
+                                          item.content,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontFamily: !isUser ? 'monospace' : null,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-              color: Colors.white,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _inputController,
-                    decoration: const InputDecoration(
-                      hintText: "请输入追问内容，如：'解释一下参数 sign 的计算方式'...",
-                      border: InputBorder.none,
-                      isDense: true,
+          if (hasStarted)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                color: Colors.white,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _inputController,
+                      decoration: const InputDecoration(
+                        hintText: "请输入追问内容，如：'解释一下参数 sign 的计算方式'...",
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                      maxLines: null,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _sendMessage(),
                     ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _sendMessage(),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Colors.blue),
-                  onPressed: _sendMessage,
-                ),
-              ],
+                  IconButton(
+                    icon: const Icon(Icons.send, color: Colors.blue),
+                    onPressed: _sendMessage,
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

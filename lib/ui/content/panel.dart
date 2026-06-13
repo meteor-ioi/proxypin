@@ -23,6 +23,7 @@ import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/ui/component/state_component.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/content/web_socket.dart';
+import 'package:proxypin/ui/component/ai_analysis_panel.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
 
@@ -80,6 +81,7 @@ class NetworkTabState extends State<NetworkTabController> with SingleTickerProvi
     'Request',
     'Response',
     'Cookies',
+    'AI 诊断',
   ];
 
   final TextStyle textStyle = const TextStyle(fontSize: 14);
@@ -136,11 +138,11 @@ class NetworkTabState extends State<NetworkTabController> with SingleTickerProvi
     bool isSse = widget.response.get()?.headers.contentType.toLowerCase().startsWith('text/event-stream') == true;
     bool isStreamMessages = isWebSocket || isSse;
     if (isSse) {
-      tabs[tabs.length - 1] = "SSE";
+      tabs[tabs.length - 2] = "SSE";
     } else if (isWebSocket) {
-      tabs[tabs.length - 1] = "WebSocket";
+      tabs[tabs.length - 2] = "WebSocket";
     } else {
-      tabs[tabs.length - 1] = 'Cookies';
+      tabs[tabs.length - 2] = 'Cookies';
     }
 
     var tabBar = TabBar(
@@ -182,6 +184,15 @@ class NetworkTabState extends State<NetworkTabController> with SingleTickerProvi
                   child: isStreamMessages
                       ? Websocket(widget.request, widget.response)
                       : Cookies(widget.request, widget.response)),
+              KeepAliveWrapper(
+                child: widget.request.get() == null
+                    ? const SizedBox()
+                    : AiAnalysisPanel(
+                        key: ValueKey(widget.request.get()?.requestId),
+                        request: widget.request.get()!,
+                        hideAppBar: true,
+                      ),
+              ),
             ],
           )),
     );
