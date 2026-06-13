@@ -35,6 +35,8 @@ import '../util/logger.dart';
 import '../util/system_proxy.dart';
 import 'listener.dart';
 import 'package:proxypin/network/components/request_breakpoint.dart';
+import 'package:proxypin/network/mcp/mcp_server.dart';
+import 'package:proxypin/ui/configuration.dart';
 
 Future<void> main() async {
   var configuration = await Configuration.instance;
@@ -101,7 +103,7 @@ class ProxyServer {
       );
     });
 
-    return server.bind(port).then((serverSocket) {
+    return server.bind(port).then((serverSocket) async {
       logger.i("listen on $port");
       this.server = server;
       if (configuration.enableSystemProxy) {
@@ -110,6 +112,13 @@ class ProxyServer {
 
       //初始化证书
       CertificateManager.initCAConfig();
+
+      // 启动 MCP 服务
+      final appConfig = await AppConfiguration.instance;
+      if (appConfig.mcpEnabled) {
+        await McpServer.instance.start(appConfig.mcpPort, appConfig.mcpToken);
+      }
+
       return server;
     });
   }
@@ -119,6 +128,9 @@ class ProxyServer {
     if (!isRunning) {
       return server;
     }
+
+    // 停止 MCP 服务
+    await McpServer.instance.stop();
 
     if (configuration.enableSystemProxy) {
       await setSystemProxyEnable(false);

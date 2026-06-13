@@ -16,6 +16,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:proxypin/network/util/logger.dart';
@@ -108,6 +109,26 @@ class AppConfiguration {
 
   /// 关闭窗口时最小化到系统托盘
   bool? minimizeToTray;
+
+  /// MCP 服务开关
+  bool mcpEnabled = false;
+
+  /// MCP 端口
+  int mcpPort = 8899;
+
+  /// MCP 鉴权 Token
+  String mcpToken = "";
+
+  /// LLM 配置
+  String llmApiKey = "";
+  String llmBaseUrl = "https://api.openai.com/v1";
+  String llmModel = "gpt-4o-mini";
+
+  String _generateRandomToken() {
+    final random = math.Random();
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return List.generate(16, (index) => chars[random.nextInt(chars.length)]).join();
+  }
 
   AppConfiguration._();
 
@@ -227,6 +248,16 @@ class AppConfiguration {
         panelRatio = config['panelRatio'];
       }
       minimizeToTray = config['minimizeToTray'];
+
+      mcpEnabled = config['mcpEnabled'] ?? false;
+      mcpPort = config['mcpPort'] ?? 8899;
+      mcpToken = config['mcpToken'] ?? "";
+      if (mcpToken.isEmpty) {
+        mcpToken = _generateRandomToken();
+      }
+      llmApiKey = config['llmApiKey'] ?? "";
+      llmBaseUrl = config['llmBaseUrl'] ?? "https://api.openai.com/v1";
+      llmModel = config['llmModel'] ?? "gpt-4o-mini";
     } catch (e) {
       logger.e(e);
     }
@@ -273,6 +304,12 @@ class AppConfiguration {
         "windowPosition": windowPosition == null ? null : {"dx": windowPosition?.dx, "dy": windowPosition?.dy},
       if (Platforms.isDesktop()) 'panelRatio': panelRatio,
       if (Platforms.isDesktop()) 'minimizeToTray': minimizeToTray,
+      'mcpEnabled': mcpEnabled,
+      'mcpPort': mcpPort,
+      'mcpToken': mcpToken,
+      'llmApiKey': llmApiKey,
+      'llmBaseUrl': llmBaseUrl,
+      'llmModel': llmModel,
     };
   }
 }

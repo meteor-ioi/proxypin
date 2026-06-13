@@ -28,6 +28,7 @@ import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
+import 'package:proxypin/ui/component/ai_analysis_panel.dart';
 import 'package:proxypin/network/util/cache.dart';
 import 'package:proxypin/storage/favorites.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
@@ -236,6 +237,7 @@ class _RequestWidgetState extends State<RequestWidget> {
       _menuAction(localizations.requestRewrite, _RequestMenuAction.requestRewrite),
       _menuAction(localizations.requestMap, _RequestMenuAction.requestMap),
       _menuAction(localizations.script, _RequestMenuAction.script),
+      _menuAction("AI 流量分析", _RequestMenuAction.aiAnalysis),
       MenuItem.separator(),
       _menuAction(localizations.favorite, _RequestMenuAction.favorite),
       MenuItem(label: localizations.highlight, type: 'submenu', submenu: highlightMenu()),
@@ -318,6 +320,9 @@ class _RequestWidgetState extends State<RequestWidget> {
       case _RequestMenuAction.select:
         widget.multiSelectController.selectOnly(widget.request.requestId);
         break;
+      case _RequestMenuAction.aiAnalysis:
+        showAiAnalysis();
+        break;
       case _RequestMenuAction.delete:
         widget.remove?.call(widget);
         break;
@@ -374,6 +379,19 @@ class _RequestWidgetState extends State<RequestWidget> {
         exportHar(widget.request);
         break;
     }
+  }
+
+  void showAiAnalysis() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: SizedBox(
+          width: 800,
+          height: 600,
+          child: AiAnalysisPanel(request: widget.request),
+        ),
+      ),
+    );
   }
 
   Future<void> _openScriptDialog() async {
@@ -588,6 +606,7 @@ enum _RequestMenuAction {
   batchExport,
   batchDelete,
   batchCancel,
+  aiAnalysis,
 }
 
 enum _RequestCopyMenuAction { curl, rawRequest, requestResponse, pythonRequests, fetch }

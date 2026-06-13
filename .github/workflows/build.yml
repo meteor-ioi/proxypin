@@ -1,0 +1,85 @@
+name: Flutter Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'any'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxypin-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-desktop:
+    name: Build Desktop Artifacts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+            output_path: build/macos/Build/Products/Release/proxypin.app
+          - os: windows-latest
+            platform: windows
+            output_path: build/windows/x64/runner/Release/
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'any'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # macOS 构建
+      - name: Build macOS App
+        if: matrix.platform == 'macos'
+        run: flutter build macos --release --no-codesign
+
+      # Windows 构建
+      - name: Build Windows App
+        if: matrix.platform == 'windows'
+        run: flutter build windows --release
+
+      # 上传桌面端产物
+      - name: Upload Desktop Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxypin-${{ matrix.platform }}
+          path: ${{ matrix.output_path }}

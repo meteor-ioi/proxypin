@@ -29,6 +29,7 @@ import 'package:proxypin/ui/desktop/setting/hosts.dart';
 import 'package:proxypin/ui/desktop/setting/request_block.dart';
 
 import 'filter.dart';
+import 'package:proxypin/ui/component/ai_setting_dialog.dart';
 
 ///设置菜单
 /// @author wanghongen
@@ -80,6 +81,7 @@ class _SettingState extends State<Setting> {
             onPressed: () => MultiWindow.openWindow(localizations.script, 'ScriptWidget', size: const Size(800, 780))),
         item(localizations.breakpoint, onPressed: requestBreakpoint),
         item(localizations.externalProxy, onPressed: setExternalProxy),
+        item("AI 与 MCP 设置", onPressed: showAiSetting),
         item(localizations.about, onPressed: showAbout),
       ],
     );
@@ -92,6 +94,10 @@ class _SettingState extends State<Setting> {
         child: Padding(
             padding: const EdgeInsets.only(left: 10, right: 5),
             child: Text(text, style: const TextStyle(fontSize: 14))));
+  }
+
+  void showAiSetting() {
+    showDialog(context: context, builder: (context) => const AiSettingDialog());
   }
 
   void showAbout() {

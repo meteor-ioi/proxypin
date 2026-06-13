@@ -9,6 +9,7 @@ import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/mobile/setting/theme.dart';
+import 'package:proxypin/ui/component/ai_setting_dialog.dart';
 
 ///设置
 ///@author wanghongen
@@ -158,6 +159,19 @@ class _PreferenceState extends State<Preference> {
                   title: Text(localizations.memoryCleanup),
                   subtitle: Text(localizations.memoryCleanupSubtitle, style: const TextStyle(fontSize: 12)),
                   trailing: memoryCleanup(context, localizations)),
+            ]),
+            const SizedBox(height: 12),
+            section([
+              ListTile(
+                title: const Text("AI 与 MCP 设置"),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const AiSettingDialog(),
+                  );
+                },
+              ),
             ]),
             const SizedBox(height: 15),
           ],
