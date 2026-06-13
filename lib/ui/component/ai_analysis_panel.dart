@@ -255,7 +255,6 @@ class _AiAnalysisPanelState extends State<AiAnalysisPanel> {
                       final isUser = item.role == "user";
                       return Container(
                         margin: const EdgeInsets.symmetric(vertical: 8),
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

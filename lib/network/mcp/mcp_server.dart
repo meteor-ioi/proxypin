@@ -3,8 +3,9 @@
  */
 
 import 'dart:convert';
-import 'dart:io';
+import 'dart:io' as io;
 import 'dart:async';
+import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/bin/server.dart';
 import 'package:proxypin/network/channel/channel.dart';
 import 'package:proxypin/network/channel/channel_context.dart';
@@ -53,7 +54,7 @@ class McpServer {
   static final McpServer instance = McpServer._();
   McpServer._();
 
-  HttpServer? _server;
+  io.HttpServer? _server;
   bool _isRunning = false;
 
   bool get isRunning => _isRunning;
@@ -63,36 +64,36 @@ class McpServer {
     if (_isRunning) await stop();
 
     try {
-      _server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+      _server = await io.HttpServer.bind(io.InternetAddress.loopbackIPv4, port);
       _isRunning = true;
       logger.i("[MCP Server] 启动成功，侦听端口: $port");
 
       // 注册事件监听器，捕获内存流量
       ProxyServer.current?.addListener(McpEventListener.instance);
 
-      _server!.listen((HttpRequest request) async {
+      _server!.listen((io.HttpRequest request) async {
         // 设置跨域 CORS 头部
         request.response.headers.add("Access-Control-Allow-Origin", "*");
         request.response.headers.add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         request.response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
         if (request.method == "OPTIONS") {
-          request.response.statusCode = HttpStatus.noContent;
+          request.response.statusCode = io.HttpStatus.noContent;
           await request.response.close();
           return;
         }
 
         if (request.uri.path != "/mcp") {
-          request.response.statusCode = HttpStatus.notFound;
+          request.response.statusCode = io.HttpStatus.notFound;
           await request.response.close();
           return;
         }
 
         // 验证 Token 鉴权
-        final authHeader = request.headers.value(HttpHeaders.authorizationHeader);
+        final authHeader = request.headers.value(io.HttpHeaders.authorizationHeader);
         if (authHeader != "Bearer $token") {
-          request.response.statusCode = HttpStatus.unauthorized;
-          request.response.headers.contentType = ContentType.json;
+          request.response.statusCode = io.HttpStatus.unauthorized;
+          request.response.headers.contentType = io.ContentType.json;
           request.response.write(jsonEncode({
             "jsonrpc": "2.0",
             "error": {"code": -32001, "message": "Unauthorized: 鉴权无效或 Token 缺失"}
@@ -102,7 +103,7 @@ class McpServer {
         }
 
         if (request.method != "POST") {
-          request.response.statusCode = HttpStatus.methodNotAllowed;
+          request.response.statusCode = io.HttpStatus.methodNotAllowed;
           await request.response.close();
           return;
         }
@@ -116,12 +117,12 @@ class McpServer {
           final jsonRequest = jsonDecode(bodyString);
           final response = await _handleJsonRpc(jsonRequest);
           
-          request.response.statusCode = HttpStatus.ok;
-          request.response.headers.contentType = ContentType.json;
+          request.response.statusCode = io.HttpStatus.ok;
+          request.response.headers.contentType = io.ContentType.json;
           request.response.write(jsonEncode(response));
         } catch (e) {
-          request.response.statusCode = HttpStatus.badRequest;
-          request.response.headers.contentType = ContentType.json;
+          request.response.statusCode = io.HttpStatus.badRequest;
+          request.response.headers.contentType = io.ContentType.json;
           request.response.write(jsonEncode({
             "jsonrpc": "2.0",
             "error": {"code": -32700, "message": "Parse error: $e"}
