@@ -58,6 +58,7 @@ class ProxyServer {
 
   ProxyServer(this.configuration) {
     current = this;
+    addListener(McpEventListener.instance);
   }
 
   //是否启动
@@ -113,12 +114,6 @@ class ProxyServer {
       //初始化证书
       CertificateManager.initCAConfig();
 
-      // 启动 MCP 服务
-      final appConfig = await AppConfiguration.instance;
-      if (appConfig.mcpEnabled) {
-        await McpServer.instance.start(appConfig.mcpPort, appConfig.mcpToken);
-      }
-
       return server;
     });
   }
@@ -129,8 +124,6 @@ class ProxyServer {
       return server;
     }
 
-    // 停止 MCP 服务
-    await McpServer.instance.stop();
 
     if (configuration.enableSystemProxy) {
       await setSystemProxyEnable(false);
@@ -172,6 +165,8 @@ class ProxyServer {
 
   ///添加监听器
   void addListener(EventListener listener) {
-    listeners.add(listener);
+    if (!listeners.contains(listener)) {
+      listeners.add(listener);
+    }
   }
 }

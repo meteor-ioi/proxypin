@@ -28,6 +28,7 @@ import 'package:proxypin/utils/desktop_support.dart';
 import 'package:proxypin/utils/navigator.dart';
 import 'package:proxypin/utils/platform.dart';
 
+import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'l10n/app_localizations.dart';
 
 ///主入口
@@ -43,16 +44,20 @@ void main(List<String> args) async {
     return;
   }
 
-  var instance = AppConfiguration.instance;
+  var appConfiguration = await AppConfiguration.instance;
   var configuration = Configuration.instance;
+
+  // 启动 MCP 服务
+  if (appConfiguration.mcpEnabled) {
+    McpServer.instance.start(appConfiguration.mcpPort, appConfiguration.mcpToken);
+  }
+
   //移动端
   if (Platforms.isMobile()) {
-    var appConfiguration = await instance;
     runApp(FluentApp(MobileHomePage((await configuration), appConfiguration), appConfiguration));
     return;
   }
 
-  var appConfiguration = await instance;
   if (Platforms.isDesktop()) {
     await DesktopSupport.initialize(appConfiguration);
   }
