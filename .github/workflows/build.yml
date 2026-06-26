@@ -39,16 +39,15 @@ jobs:
       - name: Build macOS App
         run: flutter build macos --release
 
+      - name: Package macOS App
+        run: |
+          hdiutil create -volname "ProxyPin" -srcfolder build/macos/Build/Products/Release/proxypin.app -ov -format UDZO build/macos/Build/Products/Release/ProxyPin-macOS.dmg
+
       - name: Upload macOS Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: proxypin-macos
-          path: build/macos/Build/Products/Release/proxypin.app
-
-      - name: Package macOS App
-        run: |
-          cd build/macos/Build/Products/Release
-          zip -r proxypin-macos.zip proxypin.app
+          name: proxypin-macos-dmg
+          path: build/macos/Build/Products/Release/ProxyPin-macOS.dmg
 
       - name: Upload to Release
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -56,4 +55,4 @@ jobs:
         with:
           tag_name: nightly-build-${{ github.run_number }}
           name: "Nightly Build #${{ github.run_number }}"
-          files: build/macos/Build/Products/Release/proxypin-macos.zip
+          files: build/macos/Build/Products/Release/ProxyPin-macOS.dmg

@@ -52,3 +52,9 @@ pubspec.lock
 # Local macOS build artifacts
 /ProxyPin-macOS.zip
 /ProxyPin.app/
+/ProxyPin-macOS.dmg
+/*.dmg
+
+# IDE and temporary folders
+.antigravity/
+download_artifacts/
