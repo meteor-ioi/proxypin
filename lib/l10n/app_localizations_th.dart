@@ -603,7 +603,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get requestEdit => 'แก้ไขและส่ง';
 
   @override
-  String get encode => 'Encode';
+  String get encode => 'เข้ารหัส';
 
   @override
   String get requestBody => 'เนื้อหาคำขอ';
@@ -744,7 +744,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get shareCurl => 'Share cURL Request';
 
   @override
-  String get shareRequestResponse => 'Share Request and Response';
+  String get requestResponse => 'Request and Response';
 
   @override
   String get captureDetail => 'Capture Detail';
@@ -954,7 +954,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get requestBlock => 'บล็อกคำขอ';
 
   @override
-  String get other => 'Other';
+  String get other => 'อื่นๆ';
 
   @override
   String get certHashName => 'CA Hash Name';
@@ -967,6 +967,47 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get qrCode => 'QR Code';
+
+  @override
+  String get jsonViewer => 'JSON Viewer';
+
+  @override
+  String get xmlViewer => 'XML Viewer';
+
+  @override
+  String get textDiff => 'Text Diff';
+
+  @override
+  String get textEditor => 'Text Editor';
+
+  @override
+  String get compare => 'Compare';
+
+  @override
+  String get diffOriginal => 'Original';
+
+  @override
+  String get diffChanged => 'Changed';
+
+  @override
+  String get diffIdentical => 'Two texts are identical';
+
+  @override
+  String diffSummary(int added, int removed) {
+    return '+$added −$removed';
+  }
+
+  @override
+  String get text => 'Text';
+
+  @override
+  String get format => 'Format';
+
+  @override
+  String get compact => 'Compact';
+
+  @override
+  String get wordWrap => 'Word Wrap';
 
   @override
   String get scanQrCode => 'Scan QR Code';
@@ -1014,7 +1055,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get decrypt => 'Decrypt';
 
   @override
-  String get cipher => 'Cipher';
+  String get cipher => 'รหัสลับ';
+
+  @override
+  String get view => 'ดู';
 
   @override
   String get appUpdateCheckVersion => 'ตรวจสอบการอัปเดต';
@@ -1108,5 +1152,5 @@ class AppLocalizationsTh extends AppLocalizations {
   String get remoteUrl => 'URL ระยะไกล';
 
   @override
-  String get view => 'ดู';
+  String get preview => 'ดูตัวอย่าง';
 }

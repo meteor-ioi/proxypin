@@ -17,9 +17,11 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:code_forge/code_forge.dart';
 import 'package:flutter/material.dart';
 import 'package:proxypin/network/bin/configuration.dart';
 import 'package:proxypin/ui/component/chinese_font.dart';
+import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/desktop/desktop.dart';
@@ -27,6 +29,7 @@ import 'package:proxypin/ui/mobile/mobile.dart';
 import 'package:proxypin/utils/desktop_support.dart';
 import 'package:proxypin/utils/navigator.dart';
 import 'package:proxypin/utils/platform.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'package:proxypin/network/mcp/mcp_server.dart';
 import 'l10n/app_localizations.dart';
@@ -35,16 +38,31 @@ import 'l10n/app_localizations.dart';
 ///@author wanghongen
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
+
+  final windowController = Platforms.isDesktop() ? await DesktopMultiWindow.ensureInitialized() : null;
+
+  var instance = AppConfiguration.instance;
 
   //多窗口
   if (args.firstOrNull == 'multi_window') {
-    final windowId = int.parse(args[1]);
-    final argument = args[2].isEmpty ? const {} : jsonDecode(args[2]) as Map<String, dynamic>;
-    runApp(FluentApp(multiWindow(windowId, argument), (await AppConfiguration.instance)));
+    final windowId = windowController!.windowId;
+    final argument =
+        windowController.arguments.isEmpty ? const {} : jsonDecode(windowController.arguments) as Map<String, dynamic>;
+    DesktopMultiWindow.initializeFromArguments(argument);
+    var appConfiguration = await instance;
+
+    if (Platform.isMacOS) {
+      windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    }
+    if (appConfiguration.themeMode != ThemeMode.system) {
+      windowManager.setBrightness(appConfiguration.themeMode == ThemeMode.dark ? Brightness.dark : Brightness.light);
+    }
+    runApp(FluentApp(multiWindow(windowId, argument), appConfiguration));
     return;
   }
 
-  var appConfiguration = await AppConfiguration.instance;
+  var appConfiguration = await instance;
   var configuration = Configuration.instance;
 
   // 启动 MCP 服务

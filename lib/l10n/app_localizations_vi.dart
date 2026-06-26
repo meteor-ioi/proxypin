@@ -603,7 +603,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get requestEdit => 'Sửa yêu cầu';
 
   @override
-  String get encode => 'Encode';
+  String get encode => 'Mã hóa';
 
   @override
   String get requestBody => 'Thân request';
@@ -744,7 +744,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shareCurl => 'Share cURL Request';
 
   @override
-  String get shareRequestResponse => 'Share Request and Response';
+  String get requestResponse => 'Request and Response';
 
   @override
   String get captureDetail => 'Capture Detail';
@@ -954,7 +954,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get requestBlock => 'Chặn yêu cầu';
 
   @override
-  String get other => 'Other';
+  String get other => 'Khác';
 
   @override
   String get certHashName => 'CA Hash Name';
@@ -967,6 +967,47 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get qrCode => 'QR Code';
+
+  @override
+  String get jsonViewer => 'JSON Viewer';
+
+  @override
+  String get xmlViewer => 'XML Viewer';
+
+  @override
+  String get textDiff => 'Text Diff';
+
+  @override
+  String get textEditor => 'Text Editor';
+
+  @override
+  String get compare => 'Compare';
+
+  @override
+  String get diffOriginal => 'Original';
+
+  @override
+  String get diffChanged => 'Changed';
+
+  @override
+  String get diffIdentical => 'Two texts are identical';
+
+  @override
+  String diffSummary(int added, int removed) {
+    return '+$added −$removed';
+  }
+
+  @override
+  String get text => 'Text';
+
+  @override
+  String get format => 'Format';
+
+  @override
+  String get compact => 'Compact';
+
+  @override
+  String get wordWrap => 'Word Wrap';
 
   @override
   String get scanQrCode => 'Scan QR Code';
@@ -1014,7 +1055,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get decrypt => 'Decrypt';
 
   @override
-  String get cipher => 'Cipher';
+  String get cipher => 'Mật mã';
+
+  @override
+  String get view => 'Xem';
 
   @override
   String get appUpdateCheckVersion => 'Kiểm tra cập nhật';
@@ -1108,5 +1152,5 @@ class AppLocalizationsVi extends AppLocalizations {
   String get remoteUrl => 'URL từ xa';
 
   @override
-  String get view => 'Xem';
+  String get preview => 'Xem trước';
 }

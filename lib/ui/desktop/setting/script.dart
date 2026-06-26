@@ -17,16 +17,17 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:proxypin/ui/component/multi_window_compat.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_code_editor/flutter_code_editor.dart';
+import 'package:code_forge/code_forge.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
-import 'package:flutter_highlight/themes/monokai-sublime.dart';
+import 'package:re_highlight/styles/monokai-sublime.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
-import 'package:highlight/languages/javascript.dart';
+import 'package:proxypin/ui/component/search/finder.dart';
+import 'package:re_highlight/languages/javascript.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
@@ -35,6 +36,8 @@ import 'package:proxypin/ui/component/multi_window.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/utils/lang.dart';
+import 'package:proxypin/utils/platform.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 bool _refresh = false;
 
@@ -43,7 +46,7 @@ Future<void> _refreshScript({bool force = false}) async {
   if (force) {
     _refresh = false;
     await ScriptManager.instance.then((manager) => manager.flushConfig());
-    await DesktopMultiWindow.invokeMethod(0, "refreshScript");
+    await DesktopMultiWindow.invokeMainWindowMethod("refreshScript");
   }
   if (_refresh) {
     return;
@@ -52,14 +55,14 @@ Future<void> _refreshScript({bool force = false}) async {
   Future.delayed(const Duration(milliseconds: 1000), () async {
     _refresh = false;
     await ScriptManager.instance.then((manager) => manager.flushConfig());
-    await DesktopMultiWindow.invokeMethod(0, "refreshScript");
+    await DesktopMultiWindow.invokeMainWindowMethod("refreshScript");
   });
 }
 
 /// @author wanghongen
 /// 2023/10/8
 class ScriptWidget extends StatefulWidget {
-  final int windowId;
+  final String windowId;
 
   const ScriptWidget({super.key, required this.windowId});
 
@@ -167,16 +170,8 @@ class _ScriptWidgetState extends State<ScriptWidget> {
 
   //导入js
   Future<void> import() async {
-    String? path;
-    if (Platform.isMacOS) {
-      path = await DesktopMultiWindow.invokeMethod(0, "pickFiles", {
-        "allowedExtensions": ['json']
-      });
-      WindowController.fromWindowId(widget.windowId).show();
-    } else {
-      FilePickerResult? result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
-      path = result?.files.single.path;
-    }
+    FilePickerResult? result = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+    final path = result?.files.single.path;
 
     if (path == null) {
       return;
@@ -218,7 +213,7 @@ class _ScriptWidgetState extends State<ScriptWidget> {
 }
 
 class ScriptConsoleWidget extends StatefulWidget {
-  final int windowId;
+  final String windowId;
 
   const ScriptConsoleWidget({super.key, required this.windowId});
 
@@ -236,7 +231,7 @@ class _ScriptConsoleState extends State<ScriptConsoleWidget> {
   @override
   void initState() {
     super.initState();
-    DesktopMultiWindow.invokeMethod(0, "registerConsoleLog", widget.windowId);
+    DesktopMultiWindow.invokeMainWindowMethod("registerConsoleLog", widget.windowId);
     DesktopMultiWindow.setMethodHandler((call, fromWindowId) async {
       if (call.method == 'consoleLog') {
         setState(() {
@@ -348,7 +343,7 @@ class ScriptEdit extends StatefulWidget {
 }
 
 class _ScriptEditState extends State<ScriptEdit> {
-  late CodeController script;
+  late CodeForgeController script;
   late TextEditingController nameController;
   late List<TextEditingController> urlControllers;
   late TextEditingController remoteUrlController;
@@ -401,7 +396,7 @@ class _ScriptEditState extends State<ScriptEdit> {
   void initState() {
     super.initState();
     _useRemote = widget.fromRemoteUrl || ((widget.scriptItem?.remoteUrl ?? '').trim().isNotEmpty);
-    script = CodeController(language: javascript, text: widget.script ?? (_useRemote ? '' : ScriptManager.template));
+    script = CodeForgeController()..text = widget.script ?? (_useRemote ? '' : ScriptManager.template);
     nameController = TextEditingController(text: widget.scriptItem?.name ?? widget.title);
     remoteUrlController = TextEditingController(text: widget.scriptItem?.remoteUrl ?? '');
     final urls = widget.scriptItem?.urls ??
@@ -441,12 +436,9 @@ class _ScriptEditState extends State<ScriptEdit> {
             text: localizations.useGuide,
             style: const TextStyle(color: Colors.blue, fontSize: 14),
             recognizer: TapGestureRecognizer()
-              ..onTap = () => DesktopMultiWindow.invokeMethod(
-                  0,
-                  "launchUrl",
-                  isCN
-                      ? 'https://gitee.com/wanghongenpin/proxypin/wikis/%E8%84%9A%E6%9C%AC'
-                      : 'https://github.com/wanghongenpin/proxypin/wiki/Script'))),
+              ..onTap = () => launchUrl(Uri.parse(isCN
+                  ? 'https://gitee.com/wanghongenpin/proxypin/wikis/%E8%84%9A%E6%9C%AC'
+                  : 'https://github.com/wanghongenpin/proxypin/wiki/Script')))),
         const Expanded(child: Align(alignment: Alignment.topRight, child: CloseButton()))
       ]),
       contentPadding: const EdgeInsets.only(left: 15, right: 15),
@@ -661,55 +653,52 @@ class _ScriptEditState extends State<ScriptEdit> {
                         SizedBox(
                           width: 850,
                           height: 380,
-                          child: CodeTheme(
-                            data: CodeThemeData(styles: monokaiSublimeTheme),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade900,
-                                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
-                                ),
-                                child: Stack(
-                                  children: [
-                                    SingleChildScrollView(
-                                      child: CodeField(
-                                        readOnly: _useRemote,
-                                        textStyle: const TextStyle(fontSize: 13, color: Colors.white),
-                                        controller: script,
-                                        minLines: 15,
-                                        maxLines: 50,
-                                        gutterStyle: const GutterStyle(width: 50, margin: 0),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade900,
+                                border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                              ),
+                              child: Stack(
+                                children: [
+                                  CodeForge(
+                                    controller: script,
+                                    language: langJavascript,
+                                    editorTheme: monokaiSublimeTheme,
+                                    readOnly: _useRemote,
+                                    autoFocus: true,
+                                    enableGuideLines: false,
+                                    finderBuilder: (c, controller) => FindPanelView(controller: controller),
+                                    textStyle: const TextStyle(fontSize: 13, color: Colors.white),
+                                  ),
+                                  if (_useRemote && script.text.trim().isEmpty)
+                                    Positioned.fill(
+                                      child: Center(
+                                        child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(alpha: 0.28),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: RichText(
+                                                text: TextSpan(
+                                              style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                              children: [
+                                                TextSpan(text: '${localizations.click} “'),
+                                                TextSpan(
+                                                    text: localizations.preview,
+                                                    style: const TextStyle(
+                                                        color: Colors.blue,
+                                                        fontSize: 12,
+                                                        decoration: TextDecoration.underline),
+                                                    recognizer: TapGestureRecognizer()..onTap = _fetchRemoteScript),
+                                                TextSpan(text: '” ${localizations.loadRemoteScript}'),
+                                              ],
+                                            ))),
                                       ),
                                     ),
-                                    if (_useRemote && script.text.trim().isEmpty)
-                                      Positioned.fill(
-                                        child: Center(
-                                          child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withValues(alpha: 0.28),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: RichText(
-                                                  text: TextSpan(
-                                                style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                                children: [
-                                                  TextSpan(text: '${localizations.click} “'),
-                                                  TextSpan(
-                                                      text: localizations.view,
-                                                      style: const TextStyle(
-                                                          color: Colors.blue,
-                                                          fontSize: 12,
-                                                          decoration: TextDecoration.underline),
-                                                      recognizer: TapGestureRecognizer()..onTap = _fetchRemoteScript),
-                                                  TextSpan(text: '” ${localizations.loadRemoteScript}'),
-                                                ],
-                                              ))),
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                ],
                               ),
                             ),
                           ),
@@ -747,7 +736,7 @@ class _ScriptEditState extends State<ScriptEdit> {
 
 /// 脚本列表
 class ScriptList extends StatefulWidget {
-  final int windowId;
+  final String windowId;
   final List<ScriptItem> scripts;
 
   const ScriptList({super.key, required this.scripts, required this.windowId});
@@ -960,16 +949,11 @@ class _ScriptListState extends State<ScriptList> {
     if (indexes.isEmpty) return;
     //文件名称
     String fileName = 'proxypin-scripts.json';
-    String? path;
-    if (Platform.isMacOS) {
-      path = await DesktopMultiWindow.invokeMethod(0, "saveFile", {"fileName": fileName});
-      WindowController.fromWindowId(widget.windowId).show();
-    } else {
-      path = await FilePicker.saveFile(fileName: fileName);
-    }
+    String? path = await Platforms.saveFileAdaptive(fileName: fileName);
     if (path == null) {
       return;
     }
+
     var scriptManager = await ScriptManager.instance;
     List<dynamic> json = [];
     for (var idx in indexes) {

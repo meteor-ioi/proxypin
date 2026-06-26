@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import 'dart:io';
-
-import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,7 +27,7 @@ import 'package:proxypin/ui/component/state_component.dart';
 /// @author wanghongen
 /// 2023/10/8
 class DesktopMapLocal extends StatefulWidget {
-  final int? windowId;
+  final String? windowId;
   final RequestMapItem? item;
 
   const DesktopMapLocal({super.key, this.item, this.windowId});
@@ -172,14 +169,8 @@ class MapLocaleState extends State<DesktopMapLocal> {
           const SizedBox(width: 10),
           FilledButton(
               onPressed: () async {
-                String? path;
-                if (Platform.isMacOS) {
-                  path = await DesktopMultiWindow.invokeMethod(0, "pickFiles");
-                  if (widget.windowId != null) WindowController.fromWindowId(widget.windowId!).show();
-                } else {
-                  FilePickerResult? result = await FilePicker.pickFiles();
-                  path = result?.files.single.path;
-                }
+                FilePickerResult? result = await FilePicker.pickFiles();
+                final path = result?.files.single.path;
 
                 if (path == null) {
                   return;

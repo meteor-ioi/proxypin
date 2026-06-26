@@ -739,7 +739,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareCurl => '分享 cURL 请求';
 
   @override
-  String get shareRequestResponse => '分享请求和响应';
+  String get requestResponse => '请求和响应';
 
   @override
   String get captureDetail => '抓包详情';
@@ -962,6 +962,47 @@ class AppLocalizationsZh extends AppLocalizations {
   String get qrCode => '二维码';
 
   @override
+  String get jsonViewer => 'JSON 工具';
+
+  @override
+  String get xmlViewer => 'XML 查看器';
+
+  @override
+  String get textDiff => '文本对比';
+
+  @override
+  String get textEditor => '文本编辑';
+
+  @override
+  String get compare => '对比';
+
+  @override
+  String get diffOriginal => '原文';
+
+  @override
+  String get diffChanged => '新文';
+
+  @override
+  String get diffIdentical => '两段文本完全相同';
+
+  @override
+  String diffSummary(int added, int removed) {
+    return '新增 $added · 删除 $removed';
+  }
+
+  @override
+  String get text => '文本';
+
+  @override
+  String get format => '格式化';
+
+  @override
+  String get compact => '压缩';
+
+  @override
+  String get wordWrap => '自动换行';
+
+  @override
   String get scanQrCode => '扫描二维码';
 
   @override
@@ -1008,6 +1049,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cipher => '加解密';
+
+  @override
+  String get view => '查看';
 
   @override
   String get appUpdateCheckVersion => '检查更新';
@@ -1101,7 +1145,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get remoteUrl => '远程URL';
 
   @override
-  String get view => '查看';
+  String get preview => '预览';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -1835,7 +1879,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get shareCurl => '分享 cURL 請求';
 
   @override
-  String get shareRequestResponse => '分享請求和回應';
+  String get requestResponse => '請求和回應';
 
   @override
   String get captureDetail => '抓包詳情';
@@ -2100,6 +2144,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get cipher => '密文';
 
   @override
+  String get view => '查看';
+
+  @override
   String get appUpdateCheckVersion => '檢查更新';
 
   @override
@@ -2190,5 +2237,5 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get remoteUrl => '遠端URL';
 
   @override
-  String get view => '檢視';
+  String get preview => '預覽';
 }

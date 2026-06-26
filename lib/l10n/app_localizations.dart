@@ -1540,11 +1540,11 @@ abstract class AppLocalizations {
   /// **'Share cURL Request'**
   String get shareCurl;
 
-  /// No description provided for @shareRequestResponse.
+  /// No description provided for @requestResponse.
   ///
   /// In en, this message translates to:
-  /// **'Share Request and Response'**
-  String get shareRequestResponse;
+  /// **'Request and Response'**
+  String get requestResponse;
 
   /// No description provided for @captureDetail.
   ///
@@ -1978,6 +1978,84 @@ abstract class AppLocalizations {
   /// **'QR Code'**
   String get qrCode;
 
+  /// No description provided for @jsonViewer.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON Viewer'**
+  String get jsonViewer;
+
+  /// No description provided for @xmlViewer.
+  ///
+  /// In en, this message translates to:
+  /// **'XML Viewer'**
+  String get xmlViewer;
+
+  /// No description provided for @textDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Text Diff'**
+  String get textDiff;
+
+  /// No description provided for @textEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Text Editor'**
+  String get textEditor;
+
+  /// No description provided for @compare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get compare;
+
+  /// No description provided for @diffOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get diffOriginal;
+
+  /// No description provided for @diffChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed'**
+  String get diffChanged;
+
+  /// No description provided for @diffIdentical.
+  ///
+  /// In en, this message translates to:
+  /// **'Two texts are identical'**
+  String get diffIdentical;
+
+  /// No description provided for @diffSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'+{added} −{removed}'**
+  String diffSummary(int added, int removed);
+
+  /// No description provided for @text.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get text;
+
+  /// No description provided for @format.
+  ///
+  /// In en, this message translates to:
+  /// **'Format'**
+  String get format;
+
+  /// No description provided for @compact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get compact;
+
+  /// No description provided for @wordWrap.
+  ///
+  /// In en, this message translates to:
+  /// **'Word Wrap'**
+  String get wordWrap;
+
   /// No description provided for @scanQrCode.
   ///
   /// In en, this message translates to:
@@ -2073,6 +2151,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cipher'**
   String get cipher;
+
+  /// No description provided for @view.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get view;
 
   /// No description provided for @appUpdateCheckVersion.
   ///
@@ -2254,11 +2338,11 @@ abstract class AppLocalizations {
   /// **'Remote URL'**
   String get remoteUrl;
 
-  /// No description provided for @view.
+  /// No description provided for @preview.
   ///
   /// In en, this message translates to:
-  /// **'View'**
-  String get view;
+  /// **'Preview'**
+  String get preview;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
