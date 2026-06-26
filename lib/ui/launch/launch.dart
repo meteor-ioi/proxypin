@@ -29,6 +29,7 @@ import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/desktop_tray.dart';
 import 'package:proxypin/utils/platform.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:proxypin/network/mcp/mcp_server.dart';
 
 import '../mobile/setting/ssl.dart';
 
@@ -159,12 +160,30 @@ class _SocketLaunchState extends State<SocketLaunch> with WindowListener, Widget
 
   Future<void> appExit() async {
     logger.d("appExit");
-    await widget.proxyServer.stop();
+    
+    // 同时优雅停止 McpServer 和 proxyServer，添加 3 秒全局清理超时保护
+    try {
+      await Future.wait([
+        McpServer.instance.stop(),
+        widget.proxyServer.stop(),
+      ]).timeout(const Duration(seconds: 3));
+    } catch (e, st) {
+      logger.e("Error during appExit cleanup: $e", error: e, stackTrace: st);
+    }
+
     started = false;
     if (Platforms.isDesktop()) {
-      await DesktopTrayManager.instance.exitApp();
+      try {
+        await DesktopTrayManager.instance.exitApp();
+      } catch (e) {
+        logger.e("exitApp error: $e");
+      }
       windowManager.setPreventClose(false);
-      await windowManager.destroy();
+      try {
+        await windowManager.destroy();
+      } catch (e) {
+        logger.e("windowManager destroy error: $e");
+      }
     }
 
     if (!Platform.isWindows && !Platform.isLinux) {

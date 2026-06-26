@@ -58,7 +58,9 @@ class ProxyServer {
 
   ProxyServer(this.configuration) {
     current = this;
-    addListener(McpEventListener.instance);
+    if (AppConfiguration.current?.mcpEnabled == true) {
+      addListener(McpEventListener.instance);
+    }
   }
 
   //是否启动
